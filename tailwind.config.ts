@@ -47,6 +47,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // LearnYourWay specific colors
+        "sidebar-bg": "hsl(var(--sidebar-bg))",
+        "hover-bg": "hsl(var(--hover-bg))",
+        "active-bg": "hsl(var(--active-bg))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

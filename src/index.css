@@ -2,41 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* LearnYourWay Design System - All colors, gradients, fonts, etc defined here. 
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* LearnYourWay Color Palette */
+    --background: 0 0% 97%; /* Light gray #f7f7f7 */
+    --foreground: 0 0% 9%; /* Near black for text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%; /* Pure white cards */
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Hot pink accent #ff2e63 */
+    --primary: 342 100% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Subtle grays for secondary elements */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%; /* Dark gray for descriptions */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Pink accent variations */
+    --accent: 342 100% 97%; /* Very light pink for labels */
+    --accent-foreground: 342 100% 40%; /* Darker pink for label text */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 0 0% 90%;
+    --input: 0 0% 96%;
+    --ring: 342 100% 58%; /* Pink focus ring */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* rounded-xl default */
+
+    /* Sidebar specific colors */
+    --sidebar-bg: 0 0% 100%; /* White sidebar */
+    --sidebar-shadow: 0 0% 0% / 0.1; /* Subtle shadow */
+    
+    /* Interactive states */
+    --hover-bg: 0 0% 98%;
+    --active-bg: 342 100% 97%;
+    
+    /* Smooth transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +115,50 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* LearnYourWay Component Styles */
+  .sidebar-shadow {
+    box-shadow: 2px 0 8px -2px hsl(var(--sidebar-shadow));
+  }
+  
+  .card-hover {
+    transition: var(--transition-smooth);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px hsl(var(--sidebar-shadow));
+  }
+  
+  .feature-label {
+    @apply bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-hover-bg hover:text-foreground;
+    transition: var(--transition-smooth);
+  }
+  
+  .nav-item.active {
+    @apply bg-active-bg text-primary font-medium;
+  }
+  
+  .search-focus {
+    @apply focus:ring-2 focus:ring-primary focus:border-primary;
+  }
+  
+  /* Mobile responsive adjustments */
+  @media (max-width: 768px) {
+    .sidebar-fixed {
+      transform: translateX(-100%);
+    }
+    
+    .main-content {
+      margin-left: 0;
+    }
   }
 }
