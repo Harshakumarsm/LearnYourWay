@@ -5,6 +5,7 @@ import {
   Smartphone, 
   Users, 
   Trophy,
+  Search,
   ChevronDown
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,19 +23,23 @@ import {
 } from "@/components/ui/sidebar";
 import { SignedIn, SignedOut, useUser } from "@clerk/clerk-react";
 import { AuthWrapper, UserButton } from "@/components/Authentication";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const menuItems = [
-  { icon: Rocket, label: "Launcher", active: false },
-  { icon: Brain, label: "My Sensei", active: false },
-  { icon: Briefcase, label: "Portfolio", active: false },
-  { icon: Smartphone, label: "AI Apps", active: true },
-  { icon: Users, label: "Consult AI", active: false },
-  { icon: Trophy, label: "QuizQuest", active: false },
+  { icon: Rocket, label: "Launcher", path: "/", active: false },
+  { icon: Brain, label: "My Sensei", path: "/", active: false },
+  { icon: Briefcase, label: "Portfolio", path: "/", active: false },
+  { icon: Smartphone, label: "AI Apps", path: "/", active: true },
+  { icon: Search, label: "ContentMiner", path: "/content-miner", active: false },
+  { icon: Users, label: "Consult AI", path: "/", active: false },
+  { icon: Trophy, label: "QuizQuest", path: "/", active: false },
 ];
 
 export const Sidebar = () => {
   const { state } = useSidebar();
   const { user } = useUser();
+  const navigate = useNavigate();
+  const location = useLocation();
   const isCollapsed = state === "collapsed";
 
   return (
@@ -58,13 +63,15 @@ export const Sidebar = () => {
             <SidebarMenu className={`${isCollapsed ? 'px-2 py-4' : 'px-4 py-6'} space-y-1`}>
               {menuItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = location.pathname === item.path;
                 return (
                   <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton 
-                      isActive={item.active}
+                      isActive={isActive}
                       tooltip={isCollapsed ? item.label : undefined}
+                      onClick={() => navigate(item.path)}
                       className={`w-full ${isCollapsed ? 'justify-center px-0 h-10' : 'justify-start gap-3 px-3 h-10'} ${
-                        item.active 
+                        isActive 
                           ? 'bg-primary/10 text-primary border-r-2 border-primary' 
                           : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                       }`}

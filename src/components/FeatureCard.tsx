@@ -1,16 +1,30 @@
 import { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 interface FeatureCardProps {
   icon: LucideIcon;
   title: string;
   description: string;
   label: string;
+  id?: string;
 }
 
-export const FeatureCard = ({ icon: Icon, title, description, label }: FeatureCardProps) => {
+export const FeatureCard = ({ icon: Icon, title, description, label, id }: FeatureCardProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (id === "content-miner") {
+      navigate("/content-miner");
+    }
+    // Add other navigation logic for other features as needed
+  };
+
   return (
-    <Card className="relative bg-card border border-border rounded-xl card-hover cursor-pointer">
+    <Card 
+      className="relative bg-card border border-border rounded-xl card-hover cursor-pointer"
+      onClick={handleClick}
+    >
       <CardContent className="p-6">
         {/* Icon in top right */}
         <div className="absolute top-6 right-6">
