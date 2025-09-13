@@ -20,6 +20,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { SignedIn, SignedOut, useUser } from "@clerk/clerk-react";
+import { AuthWrapper, UserButton } from "@/components/Authentication";
 
 const menuItems = [
   { icon: Rocket, label: "Launcher", active: false },
@@ -32,6 +34,7 @@ const menuItems = [
 
 export const Sidebar = () => {
   const { state } = useSidebar();
+  const { user } = useUser();
   const isCollapsed = state === "collapsed";
 
   return (
@@ -77,29 +80,45 @@ export const Sidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* User Profile Footer - Hide completely when collapsed */}
-      {!isCollapsed && (
-        <SidebarFooter className="p-4 border-t border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10 shrink-0">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  S
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-foreground truncate">
-                  Student
-                </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  student@gami.com...
+      {/* User Profile Footer - Always visible, content changes based on auth state */}
+      <SidebarFooter className="p-4 border-t border-border">
+        <SignedIn>
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <UserButton />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground truncate">
+                    {user?.firstName || user?.username || "User"}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {user?.primaryEmailAddress?.emailAddress || "No email"}
+                  </div>
                 </div>
               </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </div>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </div>
-        </SidebarFooter>
-      )}
+          ) : (
+            <div className="flex justify-center">
+              <UserButton />
+            </div>
+          )}
+        </SignedIn>
+        <SignedOut>
+          {!isCollapsed ? (
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground text-center">
+                Sign in to access all features
+              </div>
+              <AuthWrapper showSignUp={true} />
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <AuthWrapper showSignUp={false} />
+            </div>
+          )}
+        </SignedOut>
+      </SidebarFooter>
     </SidebarRoot>
   );
 };
