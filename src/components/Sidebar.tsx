@@ -37,13 +37,13 @@ export const Sidebar = () => {
   return (
     <SidebarRoot collapsible="icon" className="border-r border-border">
       {/* Header with Logo */}
-      <SidebarHeader className="p-6 border-b border-border">
-        <div className="flex items-center gap-2">
+      <SidebarHeader className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-border`}>
+        <div className="flex items-center justify-center">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <span className="text-primary-foreground font-bold text-lg">✧</span>
           </div>
           {!isCollapsed && (
-            <span className="text-xl font-bold text-primary">LearnYourWay</span>
+            <span className="text-xl font-bold text-primary ml-2">LearnYourWay</span>
           )}
         </div>
       </SidebarHeader>
@@ -52,15 +52,15 @@ export const Sidebar = () => {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="px-4 py-6 space-y-2">
+            <SidebarMenu className={`${isCollapsed ? 'px-2 py-4' : 'px-4 py-6'} space-y-1`}>
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton 
                       isActive={item.active}
-                      tooltip={item.label}
-                      className={`w-full justify-start gap-3 px-3 py-2 h-10 ${
+                      tooltip={isCollapsed ? item.label : undefined}
+                      className={`w-full ${isCollapsed ? 'justify-center px-0 h-10' : 'justify-start gap-3 px-3 h-10'} ${
                         item.active 
                           ? 'bg-primary/10 text-primary border-r-2 border-primary' 
                           : 'text-muted-foreground hover:text-foreground hover:bg-accent'
@@ -77,16 +77,16 @@ export const Sidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* User Profile Footer */}
-      <SidebarFooter className="p-4 border-t border-border">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10 shrink-0">
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                S
-              </AvatarFallback>
-            </Avatar>
-            {!isCollapsed && (
+      {/* User Profile Footer - Hide completely when collapsed */}
+      {!isCollapsed && (
+        <SidebarFooter className="p-4 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 shrink-0">
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  S
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-foreground truncate">
                   Student
@@ -95,13 +95,11 @@ export const Sidebar = () => {
                   student@gami.com...
                 </div>
               </div>
-            )}
-          </div>
-          {!isCollapsed && (
+            </div>
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </div>
-      </SidebarFooter>
+          </div>
+        </SidebarFooter>
+      )}
     </SidebarRoot>
   );
 };
