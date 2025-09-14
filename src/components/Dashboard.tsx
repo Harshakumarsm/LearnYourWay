@@ -1,10 +1,6 @@
 'use client';
 
 import { useState } from "react";
-<<<<<<< Updated upstream
-import { useState } from "react";
-=======
->>>>>>> Stashed changes
 import { Sidebar } from "./Sidebar";
 import ReminderOverlay from "./ReminderOverlay";
 import { FeatureCard } from "./FeatureCard";
@@ -71,11 +67,9 @@ export const Dashboard = () => {
 
   const openReminderOverlay = () => setReminderOverlayOpen(true);
   const closeReminderOverlay = () => setReminderOverlayOpen(false);
-<<<<<<< Updated upstream
+
   const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
 
-=======
->>>>>>> Stashed changes
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -128,30 +122,27 @@ export const Dashboard = () => {
                     </div>
                   );
                 }
-<<<<<<< Updated upstream
+
                 return <FeatureCard 
                   key={feature.id} 
                   {...feature}
                   onStudyRoomClick={() => setIsStudyRoomModalOpen(true)}
                 />;
-=======
                 return <FeatureCard key={feature.id} {...feature} />;
->>>>>>> Stashed changes
               })}
             </div>
           </main>
         </SidebarInset>
       </div>
       <ReminderOverlay isOpen={isReminderOverlayOpen} onClose={closeReminderOverlay} />
-<<<<<<< Updated upstream
+
 
       {/* Study Room Modal */}
       <StudyRoomModal 
         isOpen={isStudyRoomModalOpen}
         onClose={() => setIsStudyRoomModalOpen(false)}
       />
-=======
->>>>>>> Stashed changes
+
     </SidebarProvider>
   );
 };
