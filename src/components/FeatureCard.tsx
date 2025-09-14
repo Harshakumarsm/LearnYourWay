@@ -21,6 +21,8 @@ export const FeatureCard = ({ icon: Icon, title, description, label, id, onStudy
       onStudyRoomClick();
     } else if (id === "quiz-quest") {
       navigate("/quiz");
+    } else if (id === "Logic AI") {
+      navigate("/logic-ai");
     }
     // Add other navigation logic for other features as needed
   };

@@ -48,11 +48,11 @@ const features = [
     label: "Engaging"
   },
   {
-    id: "quiz-quest",
+    id: "Logic AI",
     icon: Trophy,
-    title: "QuizQuest",
-    description: "Interactive, gamified assessments to make learning fun and competitive.",
-    label: "Gamified"
+    title: "LogicAI",
+    description: "Learn Logical way of solving problems with interactive challenges.",
+    label: "Adaptive"
   },
   {
     id: "study-rooms",

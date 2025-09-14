@@ -55,6 +55,15 @@ export interface LogicAIResponse {
   final_justification?: string;
 }
 
+// New simplified interface for text-only LogicAI flow
+export interface SimpleLogicAIResponse {
+  restated_question: string;
+  strategies: string[];
+  nudge: string;
+  approach_hint: string;
+  step_by_step_reasoning: string;
+}
+
 export interface ProcessResponse {
   success: boolean;
   questions: Question[];
@@ -612,9 +621,6 @@ Behavior rules:
     });
   }
 
-  /**
-   * Validate file type and size
-   */
   static validateFile(file: File, type: 'pdf' | 'image'): { valid: boolean; error?: string } {
     const maxSize = 10 * 1024 * 1024; // 10MB
     
@@ -635,6 +641,7 @@ Behavior rules:
 
     return { valid: true };
   }
+
 }
 
 // Mock data for development/testing
@@ -715,3 +722,66 @@ export const mockLogicAIResponses: Record<string, LogicAIResponse> = {
     can_reveal_answer: false
   }
 };
+
+  /**
+   * Text-only LogicAI flow using Gemini API
+   */
+  static async processTextQuestion(questionText: string, questionType?: string): Promise<SimpleLogicAIResponse> {
+    try {
+      const detectedType = questionType || this.detectQuestionType(questionText);
+      
+      const prompt = `You are LogicAI, a reasoning tutor that focuses on teaching logical approaches to solving questions.
+Input: ${questionText}
+Type: ${detectedType}
+
+Always output in strict JSON format:
+{
+  "restated_question": "...",
+  "strategies": ["...", "...", "..."],
+  "nudge": "...",
+  "approach_hint": "...",
+  "step_by_step_reasoning": "..."
+}`;
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
+        })
+      });
+
+      if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
+
+      const result = await response.json();
+      const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!content) throw new Error('No content received from Gemini API');
+
+      const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+      const match = content.match(jsonRegex);
+      const jsonString = match ? match[1] : content;
+
+      const parsed = JSON.parse(jsonString);
+      return {
+        restated_question: parsed.restated_question,
+        strategies: parsed.strategies || [],
+        nudge: parsed.nudge,
+        approach_hint: parsed.approach_hint,
+        step_by_step_reasoning: parsed.step_by_step_reasoning
+      };
+    } catch (error) {
+      console.error('LogicAI processing error:', error);
+      throw error;
+    }
+  }
+
+  static detectQuestionType(questionText: string): string {
+    const text = questionText.toLowerCase();
+    if (text.includes('a)') || text.includes('b)')) return 'MCQ';
+    if (text.includes('true or false')) return 'TrueFalse';
+    if (text.includes('solve') || text.includes('calculate')) return 'Word Problem';
+    return 'Short Answer';
+  }
+}
