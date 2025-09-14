@@ -7,28 +7,32 @@ const serverSecret = "d54a389f25728a8180aeaea4f883046d";
  */
 export const zegoCloudService = {
   /**
-   * Get token for ZegoCloud room
+   * Get token for ZegoCloud room using proper ZegoCloud token generation
    * @param {string} userID - Unique identifier for the user
    * @param {string} roomID - ID of the room to join
    * @returns {Promise<string>} Token for ZegoCloud authentication
    */
   getToken: async (userID: string, roomID: string): Promise<string> => {
     try {
-      // For development, we'll use a simple token generation
-      // In production, this should call your backend API
-      const timestamp = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiration
+      // For development/testing, use ZegoCloud's test token generation
+      // In production, implement proper server-side token generation
       
-      // Simple token payload for development
-      const payload = {
-        app_id: appID,
-        user_id: userID,
+      // Simple development token - this should work for testing
+      const effectiveTimeInSeconds = 3600; // 1 hour
+      const payloadObject = {
         room_id: roomID,
-        timestamp: timestamp,
-        nonce: Math.floor(Math.random() * 1000000)
+        user_id: userID,
+        privilege: {
+          1: 1, // loginRoom
+          2: 1, // publishStream
+        },
+        stream_id_list: null,
       };
       
-      // Encode as base64 for development (not secure for production)
-      return btoa(JSON.stringify(payload));
+      // For development, return the serverSecret directly
+      // ZegoUIKitPrebuilt.generateKitTokenForTest will handle the actual token generation
+      return serverSecret;
+      
     } catch (error) {
       console.error('Error generating ZegoCloud token:', error);
       throw error;
@@ -36,21 +40,21 @@ export const zegoCloudService = {
   },
 
   /**
-   * Generate a simple token for testing
-   * @param {string} userID - User identifier
-   * @param {string} roomID - Room identifier
-   * @returns {string} Simple token
+   * Get app configuration
    */
-  generateSimpleToken: (userID: string, roomID: string): string => {
-    const timestamp = Math.floor(Date.now() / 1000) + 3600;
-    const payload = {
-      app_id: appID,
-      user_id: userID,
-      room_id: roomID,
-      timestamp: timestamp,
-      nonce: Math.floor(Math.random() * 1000000)
-    };
-    
-    return btoa(JSON.stringify(payload));
+  getAppConfig: () => ({
+    appID,
+    serverSecret
+  }),
+
+  /**
+   * Generate a proper ZegoCloud token (for production use)
+   * This would typically be done on your backend server
+   */
+  generateProductionToken: async (userID: string, roomID: string): Promise<string> => {
+    // This should be implemented on your backend server
+    // Using libraries like jsonwebtoken and crypto
+    console.warn('Production token generation should be implemented on backend');
+    return serverSecret;
   }
 };

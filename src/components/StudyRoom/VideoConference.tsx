@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 import { Button } from "@/components/ui/button";
-import { Video, VideoOff, Mic, MicOff, PhoneOff } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 import { zegoCloudService } from "@/services/zegoCloudService";
 
@@ -9,16 +9,18 @@ interface VideoConferenceProps {
   roomId: string;
   username: string;
   topic?: string;
+  fullscreenContainerRef?: React.RefObject<HTMLDivElement>;
 }
 
 const appID = 1166166195;
 const serverSecret = "d54a389f25728a8180aeaea4f883046d";
 
-export const VideoConference = ({ roomId, username, topic }: VideoConferenceProps) => {
+export const VideoConference = ({ roomId, username, topic, fullscreenContainerRef }: VideoConferenceProps) => {
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const meetingContainerRef = useRef<HTMLDivElement>(null);
   const zegoInstanceRef = useRef<any>(null);
 
@@ -126,6 +128,62 @@ export const VideoConference = ({ roomId, username, topic }: VideoConferenceProp
     }
   };
 
+  // Define types for fullscreen API
+  interface FullscreenElement extends HTMLDivElement {
+    webkitRequestFullscreen?: () => Promise<void>;
+    msRequestFullscreen?: () => Promise<void>;
+  }
+
+  interface FullscreenDocument extends Document {
+    webkitExitFullscreen?: () => Promise<void>;
+    msExitFullscreen?: () => Promise<void>;
+  }
+  
+  const toggleFullscreen = () => {
+    const element = (fullscreenContainerRef?.current) as FullscreenElement | null;
+    if (!element) {
+        toast.error("Cannot enter fullscreen mode.");
+        return;
+    };
+
+    if (!document.fullscreenElement) {
+      // Request fullscreen with fallbacks for different browsers
+      if (element.requestFullscreen) {
+        element.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+          toast.error("Couldn't enter fullscreen mode");
+        });
+      } else if (element.webkitRequestFullscreen) {
+        element.webkitRequestFullscreen();
+      } else if (element.msRequestFullscreen) {
+        element.msRequestFullscreen();
+      }
+      setIsFullscreen(true);
+    } else {
+      // Exit fullscreen with fallbacks
+      const doc = document as FullscreenDocument;
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   if (!isConnected) {
     return (
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-6 shadow-lg">
@@ -159,6 +217,14 @@ export const VideoConference = ({ roomId, username, topic }: VideoConferenceProp
             {topic && <p className="text-blue-100 text-sm">{topic}</p>}
           </div>
           <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={toggleFullscreen}
+              className="text-white hover:bg-white/20"
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
             <Button
               size="sm"
               variant="ghost"

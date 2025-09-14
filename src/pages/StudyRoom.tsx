@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@clerk/clerk-react";
@@ -18,6 +18,7 @@ export const StudyRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { user } = useUser();
+  const videoConferenceContainerRef = useRef<HTMLDivElement>(null);
 
   const [room, setRoom] = useState<Room | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -318,6 +319,7 @@ export const StudyRoom = () => {
 
         {/* Video Conference Section */}
         <motion.div
+          ref={videoConferenceContainerRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
@@ -328,6 +330,7 @@ export const StudyRoom = () => {
             roomId={room.id}
             username={user?.fullName || user?.firstName || "Anonymous"}
             topic={room.subject}
+            fullscreenContainerRef={videoConferenceContainerRef}
           />
         </motion.div>
 
