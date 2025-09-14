@@ -9,6 +9,7 @@ import ContentMiner from "./pages/ContentMiner";
 import { StudyRoom } from "./pages/StudyRoom";
 import { VideoRoomPage } from "./pages/VideoRoom";
 import NotFound from "./pages/NotFound";
+import CareerRoadmapPage from "./pages/CareerRoadmapPage";
 
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/content-miner" element={<ContentMiner />} />
+            <Route path="/career-roadmap" element={<CareerRoadmapPage />} />
             <Route path="/room/:roomId" element={<StudyRoom />} />
             <Route path="/video/:roomId" element={<VideoRoomPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

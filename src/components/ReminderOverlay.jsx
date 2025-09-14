@@ -59,26 +59,26 @@ const ReminderOverlay = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md">
-      <div className="relative w-full max-w-lg p-8 mx-4 bg-gray-900 rounded-2xl shadow-2xl border border-gray-600 text-white transform transition-all duration-300 ease-out scale-100">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="relative w-full max-w-lg p-6 mx-4 bg-background rounded-xl shadow-2xl border border-border transform transition-all duration-300 ease-out scale-100">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 rounded-full transition-all duration-200 text-xl font-bold"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-all duration-200 text-xl font-bold"
         >
           ×
         </button>
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 mx-auto mb-4 bg-primary rounded-full flex items-center justify-center shadow-lg">
+            <svg className="w-6 h-6 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">Set a Reminder</h2>
-          <p className="text-gray-300">Never miss your learning goals again!</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Set a Reminder</h2>
+          <p className="text-muted-foreground">Never miss your learning goals again!</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-300">
+            <label htmlFor="name" className="block mb-2 text-sm font-medium text-foreground">
               Name
             </label>
             <input
@@ -89,16 +89,11 @@ const ReminderOverlay = ({ isOpen, onClose }) => {
               onChange={handleChange}
               required
               placeholder="Enter your full name"
-              className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-white placeholder-gray-400 font-medium"
-              style={{
-                color: '#ffffff',
-                backgroundColor: '#374151',
-                fontSize: '16px'
-              }}
+              className="w-full px-3 py-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-foreground placeholder-muted-foreground"
             />
           </div>
           <div>
-            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-300">
+            <label htmlFor="email" className="block mb-2 text-sm font-medium text-foreground">
               📧 Email Address
             </label>
             <input
@@ -109,16 +104,11 @@ const ReminderOverlay = ({ isOpen, onClose }) => {
               onChange={handleChange}
               required
               placeholder="your.email@example.com"
-              className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-white placeholder-gray-400 font-medium"
-              style={{
-                color: '#ffffff',
-                backgroundColor: '#374151',
-                fontSize: '16px'
-              }}
+              className="w-full px-3 py-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-foreground placeholder-muted-foreground"
             />
           </div>
           <div>
-            <label htmlFor="topic" className="block mb-2 text-sm font-medium text-gray-300">
+            <label htmlFor="topic" className="block mb-2 text-sm font-medium text-foreground">
               📚 Topic to Study
             </label>
             <input
@@ -129,16 +119,11 @@ const ReminderOverlay = ({ isOpen, onClose }) => {
               onChange={handleChange}
               required
               placeholder="e.g., JavaScript, React, Python..."
-              className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-white placeholder-gray-400 font-medium"
-              style={{
-                color: '#ffffff',
-                backgroundColor: '#374151',
-                fontSize: '16px'
-              }}
+              className="w-full px-3 py-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-foreground placeholder-muted-foreground"
             />
           </div>
           <div>
-            <label htmlFor="time" className="block mb-2 text-sm font-medium text-gray-300">
+            <label htmlFor="time" className="block mb-2 text-sm font-medium text-foreground">
               ⏰ Reminder Time
             </label>
             <input
@@ -149,31 +134,26 @@ const ReminderOverlay = ({ isOpen, onClose }) => {
               onChange={handleChange}
               required
               placeholder="e.g., 2:30 PM, 14:30, 9:00 AM"
-              className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-white placeholder-gray-400 font-medium"
-              style={{
-                color: '#ffffff',
-                backgroundColor: '#374151',
-                fontSize: '16px'
-              }}
+              className="w-full px-3 py-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-foreground placeholder-muted-foreground"
             />
-            <p className="text-xs text-gray-400 mt-1">Enter time in any format: 2:30 PM, 14:30, 9 AM, etc.</p>
+            <p className="text-xs text-muted-foreground mt-1">Enter time in any format: 2:30 PM, 14:30, 9 AM, etc.</p>
           </div>
           {error && (
-            <div className="bg-red-900 border border-red-600 rounded-lg p-3 mt-4">
-              <p className="text-red-300 text-sm text-center">{error}</p>
+            <div className="bg-destructive/10 border border-destructive rounded-md p-3 mt-4">
+              <p className="text-destructive text-sm text-center">{error}</p>
             </div>
           )}
-          <div className="flex gap-3 pt-6">
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-all duration-200 font-medium border border-gray-600"
+              className="flex-1 px-4 py-2 text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-all duration-200 font-medium border border-input"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-all duration-200 font-medium shadow-lg"
+              className="flex-1 px-4 py-2 text-primary-foreground bg-primary hover:bg-primary/90 rounded-md transition-all duration-200 font-medium shadow-sm"
             >
               🔔 Set Reminder
             </button>

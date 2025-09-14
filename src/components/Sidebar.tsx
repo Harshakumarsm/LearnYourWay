@@ -6,7 +6,8 @@ import {
   Users, 
   Trophy,
   Search,
-  ChevronDown
+  ChevronDown,
+  MapPin
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -35,6 +36,7 @@ const menuItems = [
   { icon: Briefcase, label: "Portfolio", path: "/", active: false },
   { icon: Smartphone, label: "AI Apps", path: "/", active: true },
   { icon: Search, label: "ContentMiner", path: "/content-miner", active: false },
+  { icon: MapPin, label: "Career Roadmap", path: "/career-roadmap", active: false },
   { icon: Users, label: "Consult AI", path: "/", active: false },
   { icon: Trophy, label: "QuizQuest", path: "/", active: false },
 ];
