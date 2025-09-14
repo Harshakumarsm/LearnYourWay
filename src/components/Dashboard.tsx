@@ -69,6 +69,7 @@ export const Dashboard = () => {
   const openReminderOverlay = () => setReminderOverlayOpen(true);
   const closeReminderOverlay = () => setReminderOverlayOpen(false);
 
+
   const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
   const [isMySenseiModalOpen, setIsMySenseiModalOpen] = useState(false);
 
@@ -152,6 +153,7 @@ export const Dashboard = () => {
         </SidebarInset>
       </div>
       <ReminderOverlay isOpen={isReminderOverlayOpen} onClose={closeReminderOverlay} />
+
 
 
       {/* Study Room Modal */}
