@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ContentMiner from "./pages/ContentMiner";
 import { StudyRoom } from "./pages/StudyRoom";
 import { VideoRoomPage } from "./pages/VideoRoom";
+import { LogicAI } from "./pages/LogicAI";
 import NotFound from "./pages/NotFound";
 import CareerRoadmapPage from "./pages/CareerRoadmapPage";
 
@@ -36,6 +37,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/content-miner" element={<ContentMiner />} />
+            <Route path="/logic-ai" element={<LogicAI />} />
             <Route path="/career-roadmap" element={<CareerRoadmapPage />} />
             <Route path="/room/:roomId" element={<StudyRoom />} />
             <Route path="/video/:roomId" element={<VideoRoomPage />} />
