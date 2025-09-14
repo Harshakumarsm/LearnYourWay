@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Reminders - LearnYourWay</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1f2937;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .reminder-card {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .reminder-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .info-item {
+            margin-bottom: 8px;
+        }
+        .label {
+            font-weight: bold;
+            color: #60a5fa;
+        }
+        .refresh-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .refresh-btn:hover {
+            background-color: #2563eb;
+        }
+        .no-reminders {
+            text-align: center;
+            color: #9ca3af;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Your Reminders</h1>
+            <button class="refresh-btn" onclick="loadReminders()">🔄 Refresh</button>
+        </div>
+        <div id="reminders-container">
+            <p>Loading reminders...</p>
+        </div>
+    </div>
+
+    <script>
+        async function loadReminders() {
+            try {
+                const response = await fetch('http://localhost:3001/api/reminders');
+                const result = await response.json();
+                
+                const container = document.getElementById('reminders-container');
+                
+                if (result.success && result.data.length > 0) {
+                    container.innerHTML = result.data.map(reminder => `
+                        <div class="reminder-card">
+                            <div class="reminder-info">
+                                <div class="info-item">
+                                    <span class="label">Name:</span> ${reminder.name}
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Email:</span> ${reminder.email}
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Topic:</span> ${reminder.topic}
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Time:</span> ${reminder.time}
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Created:</span> ${new Date(reminder.createdAt).toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="no-reminders">No reminders found. Create some using the PingMe! feature!</div>';
+                }
+            } catch (error) {
+                document.getElementById('reminders-container').innerHTML = 
+                    '<div style="color: #ef4444;">Error loading reminders. Make sure the backend server is running on port 3001.</div>';
+            }
+        }
+
+        // Load reminders when page loads
+        loadReminders();
+    </script>
+</body>
+</html>

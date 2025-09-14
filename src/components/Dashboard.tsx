@@ -1,5 +1,12 @@
+'use client';
+
 import { useState } from "react";
+<<<<<<< Updated upstream
+import { useState } from "react";
+=======
+>>>>>>> Stashed changes
 import { Sidebar } from "./Sidebar";
+import ReminderOverlay from "./ReminderOverlay";
 import { FeatureCard } from "./FeatureCard";
 import { StudyRoomModal } from "./StudyRoom/StudyRoomModal";
 import { Search, Mic, MapPin, Brain, Bell, Trophy, Users } from "lucide-react";
@@ -60,8 +67,15 @@ const features = [
 ];
 
 export const Dashboard = () => {
+  const [isReminderOverlayOpen, setReminderOverlayOpen] = useState(false);
+
+  const openReminderOverlay = () => setReminderOverlayOpen(true);
+  const closeReminderOverlay = () => setReminderOverlayOpen(false);
+<<<<<<< Updated upstream
   const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
 
+=======
+>>>>>>> Stashed changes
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -106,23 +120,38 @@ export const Dashboard = () => {
 
             {/* Features Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((feature) => (
-                <FeatureCard 
+              {features.map((feature) => {
+                if (feature.id === 'ping-me') {
+                  return (
+                    <div key={feature.id} onClick={openReminderOverlay} className="cursor-pointer">
+                      <FeatureCard {...feature} />
+                    </div>
+                  );
+                }
+<<<<<<< Updated upstream
+                return <FeatureCard 
                   key={feature.id} 
                   {...feature}
                   onStudyRoomClick={() => setIsStudyRoomModalOpen(true)}
-                />
-              ))}
+                />;
+=======
+                return <FeatureCard key={feature.id} {...feature} />;
+>>>>>>> Stashed changes
+              })}
             </div>
           </main>
         </SidebarInset>
       </div>
+      <ReminderOverlay isOpen={isReminderOverlayOpen} onClose={closeReminderOverlay} />
+<<<<<<< Updated upstream
 
       {/* Study Room Modal */}
       <StudyRoomModal 
         isOpen={isStudyRoomModalOpen}
         onClose={() => setIsStudyRoomModalOpen(false)}
       />
+=======
+>>>>>>> Stashed changes
     </SidebarProvider>
   );
 };
