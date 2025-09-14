@@ -3,6 +3,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
+import quizRouter from './src/routes/quiz.js';
+import { initializeQuizSocket } from './src/sockets/quizSocket.js';
 
 const app = express();
 const server = createServer(app);
@@ -14,12 +16,15 @@ const io = new Server(server, {
   }
 });
 
+app.set('socketio', io); // Make io accessible to routes
+
 app.use(cors({
   origin: "http://localhost:5173",
   credentials: true
 }));
 
 app.use(express.json());
+app.use('/api/quiz', quizRouter);
 
 // Room data structure with persistent storage
 const rooms = new Map();
@@ -38,6 +43,8 @@ const cleanExpiredRooms = () => {
     if (room.expiry <= now && room.users.size === 0) {
       rooms.delete(roomId);
       console.log(`Empty expired room ${roomId} cleaned up`);
+    } else if (room.expiry <= now && room.users.size > 0) {
+      console.log(`Room ${roomId} is expired but still has ${room.users.size} users - keeping alive`);
     }
   }
   
@@ -58,8 +65,15 @@ const cleanExpiredRooms = () => {
 // Clean expired rooms every 5 minutes
 setInterval(cleanExpiredRooms, roomSettings.roomCleanupInterval);
 
+initializeQuizSocket(io);
+
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
+
+  // Add heartbeat to keep connection alive
+  socket.on('ping', () => {
+    socket.emit('pong');
+  });
 
   // Create a new room
   socket.on('createRoom', ({ name, subject, duration }) => {
@@ -124,14 +138,49 @@ io.on('connection', (socket) => {
 
     socket.join(roomId);
     
-    // Add user to room
-    room.users.set(socket.id, {
-      username,
-      joinedAt: Date.now(),
-      isHost: false
-    });
-
-    console.log(`${username} joined room ${roomId}`);
+    // Check if user is reconnecting
+    let existingUser = null;
+    for (const [socketId, user] of room.users.entries()) {
+      if (user.username === username && user.disconnectedAt) {
+        existingUser = { socketId, user };
+        break;
+      }
+    }
+    
+    if (existingUser) {
+      // User is reconnecting - update their socket ID and mark as connected
+      room.users.delete(existingUser.socketId);
+      room.users.set(socket.id, {
+        ...existingUser.user,
+        isConnected: true,
+        disconnectedAt: null
+      });
+      console.log(`${username} reconnected to room ${roomId}`);
+      
+      // Notify other users of reconnection
+      socket.to(roomId).emit('room:userReconnected', { 
+        username: username,
+        userId: socket.id,
+        users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
+      });
+    } else {
+      // New user joining
+      room.users.set(socket.id, {
+        username: username,
+        joinedAt: Date.now(),
+        isHost: false,
+        isConnected: true,
+        disconnectedAt: null
+      });
+      console.log(`${username} joined room ${roomId}`);
+      
+      // Notify other users of new join
+      socket.to(roomId).emit('room:userJoined', { 
+        username: username,
+        userId: socket.id,
+        users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
+      });
+    }
     
     // Notify user they joined successfully
     socket.emit('room:joined', { 
@@ -140,13 +189,6 @@ io.on('connection', (socket) => {
         ...room,
         users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
       }
-    });
-    
-    // Notify other users
-    socket.to(roomId).emit('room:userJoined', { 
-      username,
-      userId: socket.id,
-      users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
     });
   });
 
@@ -343,25 +385,47 @@ io.on('connection', (socket) => {
     socket.emit('room:shareInfo', shareInfo);
   });
 
-  // Handle disconnect
+  // Handle disconnect - implement grace period for reconnection
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     
-    // Remove user from all rooms but keep rooms alive
+    // Instead of immediately removing user, mark them as temporarily disconnected
     for (const [roomId, room] of rooms.entries()) {
       const user = room.users.get(socket.id);
       if (user) {
-        room.users.delete(socket.id);
+        // Mark user as disconnected but keep them in room for 30 seconds
+        user.disconnectedAt = Date.now();
+        user.isConnected = false;
         
-        // Notify other users
-        socket.to(roomId).emit('room:userLeft', { 
+        console.log(`User ${user.username} temporarily disconnected from room ${roomId}`);
+        
+        // Set a timeout to remove user if they don't reconnect
+        setTimeout(() => {
+          const roomNow = rooms.get(roomId);
+          if (roomNow) {
+            const currentUser = roomNow.users.get(socket.id);
+            if (currentUser && currentUser.disconnectedAt && !currentUser.isConnected) {
+              // User hasn't reconnected within grace period, remove them
+              roomNow.users.delete(socket.id);
+              
+              // Notify other users
+              io.to(roomId).emit('room:userLeft', { 
+                username: currentUser.username,
+                userId: socket.id,
+                users: Array.from(roomNow.users.values())
+              });
+              
+              console.log(`User ${currentUser.username} permanently removed from room ${roomId} after grace period`);
+            }
+          }
+        }, 30000); // 30 second grace period
+        
+        // Notify other users of temporary disconnection
+        socket.to(roomId).emit('room:userDisconnected', { 
           username: user.username,
           userId: socket.id,
           users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
         });
-        
-        // Don't delete room immediately - let cleanup function handle it later
-        console.log(`User ${user.username} left room ${roomId}, room has ${room.users.size} users remaining`);
       }
     }
   });

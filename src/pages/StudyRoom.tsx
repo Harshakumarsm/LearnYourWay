@@ -6,83 +6,146 @@ import { RoomHeader } from "@/components/StudyRoom/RoomHeader";
 import { CustomTimer } from "@/components/StudyRoom/CustomTimer";
 import { TodoList } from "@/components/StudyRoom/TodoList";
 import { UserPresence } from "@/components/StudyRoom/UserPresence";
+import { VideoConference } from "@/components/StudyRoom/VideoConference";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Home, Video } from "lucide-react";
+import { AlertTriangle, Home } from "lucide-react";
 import { socketService, type Room, type User } from "@/services/socket";
 import { toast } from "sonner";
+
 
 export const StudyRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { user } = useUser();
-  
+
   const [room, setRoom] = useState<Room | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpired, setIsExpired] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  const retryDelay = 1200; // ms
 
   useEffect(() => {
     if (!roomId || !user) return;
 
-    const socket = socketService.connect();
-    
-    // Setup socket event listeners
-    socketService.onRoomJoined(({ room: joinedRoom }) => {
+    const username = user.fullName || user.firstName || "Anonymous";
+
+    let retryTimeout: NodeJS.Timeout | null = null;
+    let connectionTimeout: NodeJS.Timeout | null = null;
+
+    const handleRoomJoined = ({ room: joinedRoom }: { room: Room }) => {
+      console.log("Room joined successfully:", joinedRoom);
       setRoom(joinedRoom);
       setUsers(joinedRoom.users);
-      setIsLoading(false);
       setError(null);
-    });
-
-    socketService.onRoomError(({ message }) => {
-      setError(message);
       setIsLoading(false);
-      toast.error(message);
-    });
+      setRetryCount(0);
+      if (connectionTimeout) clearTimeout(connectionTimeout);
+      toast.success("Successfully joined study room!");
+    };
 
-    socketService.onRoomExpired(() => {
+    const handleRoomError = ({ message }: { message: string }) => {
+      console.log("Room error received:", message);
+      // More lenient error handling - don't show errors immediately
+      if (message.toLowerCase().includes("not found")) {
+        if (retryCount < maxRetries) {
+          setRetryCount((prev) => prev + 1);
+          retryTimeout = setTimeout(() => {
+            console.log(`Retrying join room attempt ${retryCount + 1}/${maxRetries}`);
+            socketService.joinRoom(roomId, username);
+          }, retryDelay);
+        }
+        // Don't show error immediately, let the connection timeout handle it
+      } else {
+        // For other errors (not "not found"), show them
+        setError(message);
+        setIsLoading(false);
+        toast.error(message);
+      }
+    };
+    const handleRoomExpired = () => {
       setIsExpired(true);
       toast.error("Study session has expired!", {
         duration: 5000,
       });
-    });
+    };
 
-    socketService.onUserJoined(({ username, users: updatedUsers }) => {
+    const handleUserJoined = ({ username, users: updatedUsers }: { username: string, users: User[] }) => {
       setUsers(updatedUsers);
       toast.success(`${username} joined the room!`);
-    });
+    };
 
-    socketService.onUserLeft(({ username, users: updatedUsers }) => {
+    const handleUserLeft = ({ username, users: updatedUsers }: { username: string, users: User[] }) => {
       setUsers(updatedUsers);
       toast.info(`${username} left the room`);
-    });
+    };
 
-    // Todo event listeners
-    socketService.onTodoAdded(({ todos }) => {
+    const handleUserDisconnected = ({ username, users: updatedUsers }: { username: string, users: User[] }) => {
+      setUsers(updatedUsers);
+      toast.warning(`${username} disconnected temporarily`);
+    };
+
+    const handleUserReconnected = ({ username, users: updatedUsers }: { username: string, users: User[] }) => {
+      setUsers(updatedUsers);
+      toast.success(`${username} reconnected!`);
+    };
+
+    const handleTodoUpdate = ({ todos }: { todos: import("@/services/socket").Todo[] }) => {
       setRoom(prev => prev ? { ...prev, todos } : null);
-    });
+    };
 
-    socketService.onTodoUpdated(({ todos }) => {
-      setRoom(prev => prev ? { ...prev, todos } : null);
-    });
+    const setupSocket = () => {
+      const socket = socketService.connect();
 
-    socketService.onTodoDeleted(({ todos }) => {
-      setRoom(prev => prev ? { ...prev, todos } : null);
-    });
+      // Connect and join immediately without waiting
+      if (socket.connected) {
+        console.log("Socket already connected, joining room immediately");
+        socketService.joinRoom(roomId, username);
+      } else {
+        socket.on('connect', () => {
+          console.log("Socket connected, joining room");
+          socketService.joinRoom(roomId, username);
+        });
+      }
 
-    // Join the room
-    const username = user.fullName || user.firstName || "Anonymous";
-    socketService.joinRoom(roomId, username);
+      socketService.onRoomJoined(handleRoomJoined);
+      socketService.onRoomError(handleRoomError);
+      socketService.onRoomExpired(handleRoomExpired);
+      socketService.onUserJoined(handleUserJoined);
+      socketService.onUserLeft(handleUserLeft);
+      socketService.onUserDisconnected(handleUserDisconnected);
+      socketService.onUserReconnected(handleUserReconnected);
+      socketService.onTodoAdded(handleTodoUpdate);
+      socketService.onTodoUpdated(handleTodoUpdate);
+      socketService.onTodoDeleted(handleTodoUpdate);
+
+      // Set a longer timeout before considering showing error (10 seconds)
+      connectionTimeout = setTimeout(() => {
+        if (isLoading && !room) {
+          console.log("Connection timeout reached, showing error");
+          setError("Unable to connect to study room. Please check your connection and try again.");
+          setIsLoading(false);
+        }
+      }, 10000);
+    };
+
+    setIsLoading(true);
+    setError(null);
+    setRoom(null);
+    setUsers([]);
+    setupSocket();
 
     // Cleanup on unmount
     return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (connectionTimeout) clearTimeout(connectionTimeout);
+      socketService.leaveRoom();
       socketService.removeAllListeners();
-      if (room) {
-        socketService.leaveRoom();
-      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, user]);
 
   const handleLeaveRoom = () => {
@@ -93,10 +156,6 @@ export const StudyRoom = () => {
 
   const goHome = () => {
     navigate("/");
-  };
-
-  const joinVideoCall = () => {
-    navigate(`/video/${roomId}`);
   };
 
   // Loading state
@@ -120,7 +179,31 @@ export const StudyRoom = () => {
     );
   }
 
-  // Error state
+  // Error state (show loading if retrying)
+  if (isLoading) {
+    let loadingText = "Connecting to study room...";
+    if (retryCount > 0) {
+      loadingText = "Setting up your room... (retry " + retryCount + "/" + maxRetries + ")";
+    }
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950 dark:via-gray-900 dark:to-purple-950 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-4"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto"
+          />
+          <h2 className="text-xl font-semibold">{loadingText}</h2>
+          <p className="text-muted-foreground">Room ID: {roomId}</p>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (error || !room) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 dark:from-red-950 dark:via-gray-900 dark:to-orange-950 flex items-center justify-center p-4">
@@ -190,7 +273,7 @@ export const StudyRoom = () => {
   const isHost = currentUser?.isHost || false;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950 dark:via-gray-900 dark:to-purple-950">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Room Header */}
       <RoomHeader 
         roomId={room.id}
@@ -207,30 +290,46 @@ export const StudyRoom = () => {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="container mx-auto px-4 py-6 max-w-7xl"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Custom Timer */}
-          <div className="lg:col-span-1">
+        {/* Feature boxes grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
+          {/* Custom Timer */}
+          <div className="bg-white/90 p-3 rounded-lg flex flex-col h-[280px] shadow-lg">
             <CustomTimer 
               initialState={room.timer}
             />
           </div>
 
-          {/* Middle Column - Todo List */}
-          <div className="lg:col-span-1">
+          {/* Todo List */}
+          <div className="bg-white/90 p-3 rounded-lg flex flex-col h-[280px] shadow-lg">
             <TodoList 
               todos={room.todos}
               currentUser={user?.fullName || user?.firstName || "Anonymous"}
             />
           </div>
 
-          {/* Right Column - User Presence */}
-          <div className="lg:col-span-1">
+          {/* User Presence */}
+          <div className="bg-white/90 p-3 rounded-lg flex flex-col h-[280px] shadow-lg">
             <UserPresence 
               users={users}
               currentUserId={currentUser?.id}
             />
           </div>
         </div>
+
+        {/* Video Conference Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="mt-20 px-4 py-8"
+          data-video-conference
+        >
+          <VideoConference 
+            roomId={room.id}
+            username={user?.fullName || user?.firstName || "Anonymous"}
+            topic={room.subject}
+          />
+        </motion.div>
 
 
         {/* Mobile-friendly stacked layout for smaller screens */}

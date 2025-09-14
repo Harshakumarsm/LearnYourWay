@@ -5,6 +5,8 @@ interface User {
   username: string;
   joinedAt: number;
   isHost: boolean;
+  isConnected?: boolean;
+  disconnectedAt?: number | null;
 }
 
 interface Todo {
@@ -44,17 +46,61 @@ class SocketService {
   private roomId: string | null = null;
 
   connect() {
-    if (!this.socket) {
+    if (!this.socket || !this.socket.connected) {
+      console.log("SocketService: Creating new socket connection");
       this.socket = io('http://localhost:3001', {
         transports: ['websocket'],
         autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 500, // Faster initial reconnection
+        reconnectionDelayMax: 2000, // Shorter max delay
+        timeout: 10000, // Shorter timeout
+        forceNew: false
+      });
+      
+      this.socket.on('connect', () => {
+        console.log("SocketService: Connected to server", this.socket?.id);
+        this.startHeartbeat();
+      });
+      
+      this.socket.on('connect_error', (error) => {
+        console.error("SocketService: Connection error:", error);
+      });
+      
+      this.socket.on('disconnect', () => {
+        console.log("SocketService: Disconnected from server");
+        this.stopHeartbeat();
+      });
+
+      this.socket.on('pong', () => {
+        console.log("SocketService: Received pong from server");
       });
     }
     return this.socket;
   }
 
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      if (this.socket?.connected) {
+        this.socket.emit('ping');
+      }
+    }, 30000); // Send ping every 30 seconds
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
   disconnect() {
     if (this.socket) {
+      this.stopHeartbeat();
       this.socket.disconnect();
       this.socket = null;
       this.roomId = null;
@@ -67,6 +113,7 @@ class SocketService {
   }
 
   joinRoom(roomId: string, username: string) {
+    console.log("SocketService: Joining room", { roomId, username });
     this.roomId = roomId;
     this.socket?.emit('joinRoom', { roomId, username });
   }
@@ -161,11 +208,19 @@ class SocketService {
   }
 
   onRoomJoined(callback: (data: { roomId: string; room: Room }) => void) {
-    this.socket?.on('room:joined', callback);
+    console.log("SocketService: Setting up room:joined listener");
+    this.socket?.on('room:joined', (data) => {
+      console.log("SocketService: Received room:joined event", data);
+      callback(data);
+    });
   }
 
   onRoomError(callback: (data: { message: string }) => void) {
-    this.socket?.on('room:error', callback);
+    console.log("SocketService: Setting up room:error listener");
+    this.socket?.on('room:error', (data) => {
+      console.log("SocketService: Received room:error event", data);
+      callback(data);
+    });
   }
 
   onRoomExpired(callback: (data: { roomId: string }) => void) {
@@ -178,6 +233,14 @@ class SocketService {
 
   onUserLeft(callback: (data: { username: string; userId: string; users: User[] }) => void) {
     this.socket?.on('room:userLeft', callback);
+  }
+
+  onUserDisconnected(callback: (data: { username: string; userId: string; users: User[] }) => void) {
+    this.socket?.on('room:userDisconnected', callback);
+  }
+
+  onUserReconnected(callback: (data: { username: string; userId: string; users: User[] }) => void) {
+    this.socket?.on('room:userReconnected', callback);
   }
 
   // Timer event listeners
@@ -220,7 +283,7 @@ class SocketService {
   }
 
   // Sharing event listeners
-  onShareInfo(callback: (data: any) => void) {
+  onShareInfo(callback: (data: { shareUrl: string }) => void) {
     this.socket?.on('room:shareInfo', callback);
   }
 

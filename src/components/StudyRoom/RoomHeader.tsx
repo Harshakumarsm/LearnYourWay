@@ -18,7 +18,7 @@ export const RoomHeader = ({ roomId, subject, expiry, users, onLeave }: RoomHead
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [shareInfo, setShareInfo] = useState<any>(null);
+  const [shareInfo, setShareInfo] = useState<{ shareUrl: string } | null>(null);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -69,7 +69,11 @@ export const RoomHeader = ({ roomId, subject, expiry, users, onLeave }: RoomHead
   };
 
   const joinVideoCall = () => {
-    navigate(`/video/${roomId}`);
+    // Scroll to video conference section instead of navigating to separate page
+    const videoSection = document.querySelector('[data-video-conference]');
+    if (videoSection) {
+      videoSection.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const formatTime = (ms: number) => {
@@ -97,7 +101,7 @@ export const RoomHeader = ({ roomId, subject, expiry, users, onLeave }: RoomHead
       variants={headerVariants}
       initial="initial"
       animate="animate"
-      className="sticky top-0 z-50 w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-lg"
+      className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm text-gray-800 shadow-lg border-b border-gray-200"
     >
       <div className="px-4 py-3 flex items-center justify-between">
         {/* Left: Subject and Room Info */}
@@ -113,20 +117,20 @@ export const RoomHeader = ({ roomId, subject, expiry, users, onLeave }: RoomHead
 
         {/* Center: Room Key */}
         <motion.div 
-          className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20"
+          className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg border border-gray-200"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <span className="text-sm font-medium">Room:</span>
-          <code className="font-mono text-lg font-bold">{roomId}</code>
+          <span className="text-sm font-medium text-gray-700">Room:</span>
+          <code className="font-mono text-lg font-bold text-gray-800">{roomId}</code>
           <Button 
             variant="ghost" 
             size="sm"
             onClick={copyRoomKey}
-            className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+            className="h-8 w-8 p-0 hover:bg-gray-200 text-gray-700"
           >
             {copied ? (
-              <Check className="w-4 h-4 text-green-300" />
+              <Check className="w-4 h-4 text-green-600" />
             ) : (
               <Copy className="w-4 h-4" />
             )}
@@ -148,7 +152,7 @@ export const RoomHeader = ({ roomId, subject, expiry, users, onLeave }: RoomHead
               variant="ghost"
               size="sm"
               onClick={joinVideoCall}
-              className="h-8 px-3 hover:bg-white/20 text-white border border-white/20 bg-green-600/30"
+              className="h-8 px-3 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               title="Start Video Call"
             >
               <Video className="w-4 h-4 mr-1" />
@@ -159,7 +163,7 @@ export const RoomHeader = ({ roomId, subject, expiry, users, onLeave }: RoomHead
               variant="ghost"
               size="sm"
               onClick={shareToWhatsApp}
-              className="h-8 px-3 hover:bg-white/20 text-white border border-white/20"
+              className="h-8 px-3 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               title="Share on WhatsApp"
             >
               <MessageCircle className="w-4 h-4 mr-1" />
@@ -170,7 +174,7 @@ export const RoomHeader = ({ roomId, subject, expiry, users, onLeave }: RoomHead
               variant="ghost"
               size="sm"
               onClick={copyShareLink}
-              className="h-8 px-3 hover:bg-white/20 text-white border border-white/20"
+              className="h-8 px-3 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               title="Copy share link"
             >
               <Share2 className="w-4 h-4 mr-1" />

@@ -153,7 +153,7 @@ export const TodoList = ({ todos, currentUser }: TodoListProps) => {
           </div>
 
           {/* Todo List */}
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="space-y-3 max-h-[180px] overflow-y-auto">
             <AnimatePresence>
               {/* Incomplete Todos */}
               {incompleteTodos.map((todo) => (

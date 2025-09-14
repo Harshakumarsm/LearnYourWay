@@ -19,6 +19,8 @@ export const FeatureCard = ({ icon: Icon, title, description, label, id, onStudy
       navigate("/content-miner");
     } else if (id === "study-rooms" && onStudyRoomClick) {
       onStudyRoomClick();
+    } else if (id === "quiz-quest") {
+      navigate("/quiz");
     }
     // Add other navigation logic for other features as needed
   };

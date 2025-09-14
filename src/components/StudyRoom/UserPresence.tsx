@@ -26,6 +26,9 @@ export const UserPresence = ({ users, currentUserId }: UserPresenceProps) => {
   };
 
   const getInitials = (username: string) => {
+    if (!username || typeof username !== 'string') {
+      return 'U';
+    }
     return username
       .split(' ')
       .map(word => word[0])
@@ -88,7 +91,8 @@ export const UserPresence = ({ users, currentUserId }: UserPresenceProps) => {
         </CardHeader>
         
         <CardContent className="space-y-3">
-          <AnimatePresence>
+          <div className="max-h-[180px] overflow-y-auto">
+            <AnimatePresence>
             {users.map((user, index) => (
               <motion.div
                 key={user.id}
@@ -118,7 +122,7 @@ export const UserPresence = ({ users, currentUserId }: UserPresenceProps) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium truncate">
-                      {user.username}
+                      {user.username || 'Unknown User'}
                       {user.id === currentUserId && (
                         <span className="text-blue-600 ml-1">(You)</span>
                       )}
@@ -146,6 +150,11 @@ export const UserPresence = ({ users, currentUserId }: UserPresenceProps) => {
                       Host
                     </Badge>
                   )}
+                  {user.isConnected === false && (
+                    <Badge variant="outline" className="text-xs border-orange-500 text-orange-700 dark:text-orange-400">
+                      Reconnecting...
+                    </Badge>
+                  )}
                   <motion.div
                     animate={{ 
                       scale: [1, 1.2, 1],
@@ -156,12 +165,15 @@ export const UserPresence = ({ users, currentUserId }: UserPresenceProps) => {
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
-                    className="w-2 h-2 bg-green-500 rounded-full"
+                    className={`w-2 h-2 rounded-full ${
+                      user.isConnected === false ? 'bg-orange-500' : 'bg-green-500'
+                    }`}
                   />
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
+          </div>
 
           {users.length === 0 && (
             <motion.div
