@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { FeatureCard } from "./FeatureCard";
+import { StudyRoomModal } from "./StudyRoom/StudyRoomModal";
 import { Search, Mic, MapPin, Brain, Bell, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,13 +53,15 @@ const features = [
   {
     id: "study-rooms",
     icon: Users,
-    title: "Study Rooms",
+    title: "StudySphere",
     description: "Create and join group study rooms with video/audio chat, tasks, and Pomodoro timers.",
     label: "Collaborate"
   }
 ];
 
 export const Dashboard = () => {
+  const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -103,12 +107,22 @@ export const Dashboard = () => {
             {/* Features Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((feature) => (
-                <FeatureCard key={feature.id} {...feature} />
+                <FeatureCard 
+                  key={feature.id} 
+                  {...feature}
+                  onStudyRoomClick={() => setIsStudyRoomModalOpen(true)}
+                />
               ))}
             </div>
           </main>
         </SidebarInset>
       </div>
+
+      {/* Study Room Modal */}
+      <StudyRoomModal 
+        isOpen={isStudyRoomModalOpen}
+        onClose={() => setIsStudyRoomModalOpen(false)}
+      />
     </SidebarProvider>
   );
 };

@@ -8,14 +8,17 @@ interface FeatureCardProps {
   description: string;
   label: string;
   id?: string;
+  onStudyRoomClick?: () => void;
 }
 
-export const FeatureCard = ({ icon: Icon, title, description, label, id }: FeatureCardProps) => {
+export const FeatureCard = ({ icon: Icon, title, description, label, id, onStudyRoomClick }: FeatureCardProps) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
     if (id === "content-miner") {
       navigate("/content-miner");
+    } else if (id === "study-rooms" && onStudyRoomClick) {
+      onStudyRoomClick();
     }
     // Add other navigation logic for other features as needed
   };

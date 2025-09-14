@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
 import Index from "./pages/Index";
 import ContentMiner from "./pages/ContentMiner";
+import { StudyRoom } from "./pages/StudyRoom";
+import { VideoRoomPage } from "./pages/VideoRoom";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/content-miner" element={<ContentMiner />} />
+            <Route path="/room/:roomId" element={<StudyRoom />} />
+            <Route path="/video/:roomId" element={<VideoRoomPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
