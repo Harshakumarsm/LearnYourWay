@@ -50,10 +50,9 @@
     "dotenv": "^17.2.2",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.1.0",
-<<<<<<< Updated upstream
+    "express-session": "^1.18.0",
+    "axios": "^1.6.0",
     "framer-motion": "^11.0.8",
-=======
->>>>>>> Stashed changes
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "mongoose": "^8.18.1",

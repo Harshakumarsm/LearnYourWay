@@ -1,14 +1,11 @@
 'use client';
 
 import { useState } from "react";
-<<<<<<< Updated upstream
-import { useState } from "react";
-=======
->>>>>>> Stashed changes
 import { Sidebar } from "./Sidebar";
 import ReminderOverlay from "./ReminderOverlay";
 import { FeatureCard } from "./FeatureCard";
 import { StudyRoomModal } from "./StudyRoom/StudyRoomModal";
+import { MySenseiModal } from "./MySensei/MySenseiModal";
 import { Search, Mic, MapPin, Brain, Bell, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,15 +68,15 @@ export const Dashboard = () => {
 
   const openReminderOverlay = () => setReminderOverlayOpen(true);
   const closeReminderOverlay = () => setReminderOverlayOpen(false);
-<<<<<<< Updated upstream
-  const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
 
-=======
->>>>>>> Stashed changes
+  const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
+  const [isMySenseiModalOpen, setIsMySenseiModalOpen] = useState(false);
+
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        <Sidebar />
+        <Sidebar onMySenseiClick={() => setIsMySenseiModalOpen(true)} />
         
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -108,7 +105,10 @@ export const Dashboard = () => {
                   className="pl-10 py-3 bg-card border-border search-focus"
                 />
               </div>
-              <Button className="px-8 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
+              <Button 
+                className="px-8 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                onClick={() => setIsMySenseiModalOpen(true)}
+              >
                 Ask
               </Button>
             </div>
@@ -128,30 +128,43 @@ export const Dashboard = () => {
                     </div>
                   );
                 }
-<<<<<<< Updated upstream
-                return <FeatureCard 
-                  key={feature.id} 
-                  {...feature}
-                  onStudyRoomClick={() => setIsStudyRoomModalOpen(true)}
-                />;
-=======
+
+                if (feature.id === 'my-sensei') {
+                  return (
+                    <div key={feature.id} onClick={() => setIsMySenseiModalOpen(true)} className="cursor-pointer">
+                      <FeatureCard {...feature} />
+                    </div>
+                  );
+                }
+
+                if (feature.id === 'study-rooms') {
+                  return (
+                    <div key={feature.id} onClick={() => setIsStudyRoomModalOpen(true)} className="cursor-pointer">
+                      <FeatureCard {...feature} />
+                    </div>
+                  );
+                }
+
                 return <FeatureCard key={feature.id} {...feature} />;
->>>>>>> Stashed changes
               })}
             </div>
           </main>
         </SidebarInset>
       </div>
       <ReminderOverlay isOpen={isReminderOverlayOpen} onClose={closeReminderOverlay} />
-<<<<<<< Updated upstream
+
 
       {/* Study Room Modal */}
       <StudyRoomModal 
         isOpen={isStudyRoomModalOpen}
         onClose={() => setIsStudyRoomModalOpen(false)}
       />
-=======
->>>>>>> Stashed changes
+
+      {/* My Sensei Modal */}
+      <MySenseiModal 
+        isOpen={isMySenseiModalOpen}
+        onClose={() => setIsMySenseiModalOpen(false)}
+      />
     </SidebarProvider>
   );
 };

@@ -25,6 +25,10 @@ import { SignedIn, SignedOut, useUser } from "@clerk/clerk-react";
 import { AuthWrapper, UserButton } from "@/components/Authentication";
 import { useNavigate, useLocation } from "react-router-dom";
 
+interface SidebarProps {
+  onMySenseiClick?: () => void;
+}
+
 const menuItems = [
   { icon: Rocket, label: "Launcher", path: "/", active: false },
   { icon: Brain, label: "My Sensei", path: "/", active: false },
@@ -35,12 +39,20 @@ const menuItems = [
   { icon: Trophy, label: "QuizQuest", path: "/", active: false },
 ];
 
-export const Sidebar = () => {
+export const Sidebar = ({ onMySenseiClick }: SidebarProps = {}) => {
   const { state } = useSidebar();
   const { user } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const isCollapsed = state === "collapsed";
+
+  const handleMenuClick = (item: any) => {
+    if (item.label === "My Sensei" && onMySenseiClick) {
+      onMySenseiClick();
+    } else {
+      navigate(item.path);
+    }
+  };
 
   return (
     <SidebarRoot collapsible="icon" className="border-r border-border">
@@ -69,7 +81,7 @@ export const Sidebar = () => {
                     <SidebarMenuButton 
                       isActive={isActive}
                       tooltip={isCollapsed ? item.label : undefined}
-                      onClick={() => navigate(item.path)}
+                      onClick={() => handleMenuClick(item)}
                       className={`w-full ${isCollapsed ? 'justify-center px-0 h-10' : 'justify-start gap-3 px-3 h-10'} ${
                         isActive 
                           ? 'bg-primary/10 text-primary border-r-2 border-primary' 
