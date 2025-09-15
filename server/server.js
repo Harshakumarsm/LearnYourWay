@@ -389,8 +389,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Import podcast helpers
+// Import helpers
 import { generatePodcast } from '../podcast_helpers.js';
+import { geminiQuery } from '../chat_helpers.js';
 
 // Generate podcast endpoint
 app.post('/generate-podcast', async (req, res) => {
@@ -404,6 +405,28 @@ app.post('/generate-podcast', async (req, res) => {
     await generatePodcast(topic.trim(), res);
   } catch (error) {
     console.error('Error in /generate-podcast endpoint:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Chat endpoint
+app.post('/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    console.log('Received chat message:', message);
+
+    // Craft the AI prompt
+    const aiPrompt = `You are MySensei, a knowledgeable and friendly AI tutor. Your goal is to help students learn effectively.
+${message}`;
+
+    const response = await geminiQuery(aiPrompt);
+    res.json({ reply: response });
+  } catch (error) {
+    console.error('Error in chat endpoint:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
