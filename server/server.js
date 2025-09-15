@@ -3,13 +3,10 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
-import quizRouter from './src/routes/quiz.js';
-import { initializeQuizSocket } from './src/sockets/quizSocket.js';
 import dotenv from 'dotenv';
-import { generatePodcast, streamPodcastAudio, generatePodcastFallback } from '../podcast_helpers.js';
 
 // Load environment variables
-dotenv.config({ path: '../.env.local' });
+dotenv.config();
 
 // Debug environment loading
 console.log('Environment check:');
@@ -26,15 +23,16 @@ const io = new Server(server, {
   }
 });
 
-app.set('socketio', io); // Make io accessible to routes
-
+// Configure CORS
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:8080"],
   credentials: true
 }));
 
+// Add JSON body parser middleware
 app.use(express.json());
-app.use('/api/quiz', quizRouter);
+
+app.use(express.json());
 
 // Room data structure with persistent storage
 const rooms = new Map();
@@ -53,8 +51,6 @@ const cleanExpiredRooms = () => {
     if (room.expiry <= now && room.users.size === 0) {
       rooms.delete(roomId);
       console.log(`Empty expired room ${roomId} cleaned up`);
-    } else if (room.expiry <= now && room.users.size > 0) {
-      console.log(`Room ${roomId} is expired but still has ${room.users.size} users - keeping alive`);
     }
   }
   
@@ -75,15 +71,8 @@ const cleanExpiredRooms = () => {
 // Clean expired rooms every 5 minutes
 setInterval(cleanExpiredRooms, roomSettings.roomCleanupInterval);
 
-initializeQuizSocket(io);
-
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
-
-  // Add heartbeat to keep connection alive
-  socket.on('ping', () => {
-    socket.emit('pong');
-  });
 
   // Create a new room
   socket.on('createRoom', ({ name, subject, duration }) => {
@@ -148,49 +137,14 @@ io.on('connection', (socket) => {
 
     socket.join(roomId);
     
-    // Check if user is reconnecting
-    let existingUser = null;
-    for (const [socketId, user] of room.users.entries()) {
-      if (user.username === username && user.disconnectedAt) {
-        existingUser = { socketId, user };
-        break;
-      }
-    }
-    
-    if (existingUser) {
-      // User is reconnecting - update their socket ID and mark as connected
-      room.users.delete(existingUser.socketId);
-      room.users.set(socket.id, {
-        ...existingUser.user,
-        isConnected: true,
-        disconnectedAt: null
-      });
-      console.log(`${username} reconnected to room ${roomId}`);
-      
-      // Notify other users of reconnection
-      socket.to(roomId).emit('room:userReconnected', { 
-        username: username,
-        userId: socket.id,
-        users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
-      });
-    } else {
-      // New user joining
-      room.users.set(socket.id, {
-        username: username,
-        joinedAt: Date.now(),
-        isHost: false,
-        isConnected: true,
-        disconnectedAt: null
-      });
-      console.log(`${username} joined room ${roomId}`);
-      
-      // Notify other users of new join
-      socket.to(roomId).emit('room:userJoined', { 
-        username: username,
-        userId: socket.id,
-        users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
-      });
-    }
+    // Add user to room
+    room.users.set(socket.id, {
+      username,
+      joinedAt: Date.now(),
+      isHost: false
+    });
+
+    console.log(`${username} joined room ${roomId}`);
     
     // Notify user they joined successfully
     socket.emit('room:joined', { 
@@ -199,6 +153,13 @@ io.on('connection', (socket) => {
         ...room,
         users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
       }
+    });
+    
+    // Notify other users
+    socket.to(roomId).emit('room:userJoined', { 
+      username,
+      userId: socket.id,
+      users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
     });
   });
 
@@ -395,47 +356,25 @@ io.on('connection', (socket) => {
     socket.emit('room:shareInfo', shareInfo);
   });
 
-  // Handle disconnect - implement grace period for reconnection
+  // Handle disconnect
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     
-    // Instead of immediately removing user, mark them as temporarily disconnected
+    // Remove user from all rooms but keep rooms alive
     for (const [roomId, room] of rooms.entries()) {
       const user = room.users.get(socket.id);
       if (user) {
-        // Mark user as disconnected but keep them in room for 30 seconds
-        user.disconnectedAt = Date.now();
-        user.isConnected = false;
+        room.users.delete(socket.id);
         
-        console.log(`User ${user.username} temporarily disconnected from room ${roomId}`);
-        
-        // Set a timeout to remove user if they don't reconnect
-        setTimeout(() => {
-          const roomNow = rooms.get(roomId);
-          if (roomNow) {
-            const currentUser = roomNow.users.get(socket.id);
-            if (currentUser && currentUser.disconnectedAt && !currentUser.isConnected) {
-              // User hasn't reconnected within grace period, remove them
-              roomNow.users.delete(socket.id);
-              
-              // Notify other users
-              io.to(roomId).emit('room:userLeft', { 
-                username: currentUser.username,
-                userId: socket.id,
-                users: Array.from(roomNow.users.values())
-              });
-              
-              console.log(`User ${currentUser.username} permanently removed from room ${roomId} after grace period`);
-            }
-          }
-        }, 30000); // 30 second grace period
-        
-        // Notify other users of temporary disconnection
-        socket.to(roomId).emit('room:userDisconnected', { 
+        // Notify other users
+        socket.to(roomId).emit('room:userLeft', { 
           username: user.username,
           userId: socket.id,
           users: Array.from(room.users.entries()).map(([id, user]) => ({ id, ...user }))
         });
+        
+        // Don't delete room immediately - let cleanup function handle it later
+        console.log(`User ${user.username} left room ${roomId}, room has ${room.users.size} users remaining`);
       }
     }
   });
@@ -450,6 +389,9 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Import podcast helpers
+import { generatePodcast } from '../podcast_helpers.js';
+
 // Generate podcast endpoint
 app.post('/generate-podcast', async (req, res) => {
   try {
@@ -458,41 +400,11 @@ app.post('/generate-podcast', async (req, res) => {
       return res.status(400).json({ error: 'Topic is required' });
     }
 
-    console.log(`Received podcast generation request for topic: ${topic}`);
-    
-    // Check if Murf API key is configured
-    if (!process.env.MURF_API_KEY || process.env.MURF_API_KEY === 'your_murf_api_key_here') {
-      console.log('Murf API key not configured, using fallback mode');
-      const fallbackResult = await generatePodcastFallback(topic.trim());
-      return res.json(fallbackResult);
-    }
-
-    // Generate podcast with audio using streaming
-    await streamPodcastAudio(topic.trim(), res);
-    
+    console.log('Request to generate podcast for topic:', topic);
+    await generatePodcast(topic.trim(), res);
   } catch (error) {
-    console.error('Error generating podcast:', error);
-    
-    // If audio generation fails, try fallback
-    if (error.message.includes('Murf') || error.message.includes('TTS')) {
-      try {
-        console.log('Audio generation failed, attempting fallback');
-        const fallbackResult = await generatePodcastFallback(req.body.topic?.trim());
-        return res.json(fallbackResult);
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-        return res.status(500).json({ 
-          error: 'Failed to generate podcast', 
-          details: error.message,
-          fallbackError: fallbackError.message 
-        });
-      }
-    }
-    
-    res.status(500).json({ 
-      error: 'Failed to generate podcast', 
-      details: error.message 
-    });
+    console.error('Error in /generate-podcast endpoint:', error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
