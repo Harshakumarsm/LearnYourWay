@@ -2,21 +2,18 @@
 // API server for handling reminder requests and chat functionality
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
+// Import chat helpers (ES module compatible)
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { geminiQuery, generateQuiz, evaluateAnswers, generatePersonalizedExplanation, detectLearningIntent, extractTopicFromMessage } = require('./chat_helpers');
+import { generatePodcast, generatePodcastFallback } from './podcast_helpers.js';
+
 import mongoose from 'mongoose';
 import session from 'express-session';
 
-// Import chat helpers (ES6 module)
-import {
-  geminiQuery,
-  generateQuiz,
-  evaluateAnswers,
-  generatePersonalizedExplanation,
-  detectLearningIntent,
-  extractTopicFromMessage
-} from './chat_helpers.js';
-
 // Load environment variables from .env.local
+import dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 
 const app = express();
@@ -27,10 +24,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000', 
     'http://localhost:5173', 
-    'http://localhost:8080',
-    'http://192.168.71.1:8080',
-    'http://192.168.48.1:8080',
-    'http://172.29.118.23:8080'
+    'http://localhost:5000',
+    'http://localhost:8080'
   ],
   credentials: true
 }));
@@ -352,6 +347,57 @@ app.post('/chat/reset', async (req, res) => {
     console.error('Error resetting chat:', error);
     const fallbackMessage = await geminiQuery("Welcome the user back and ask how you can help them learn today.");
     res.json({ reply: fallbackMessage || "I'm ready to help you learn! What would you like to explore?" });
+  }
+});
+
+// Podcast generation endpoint with streaming
+app.post('/generate-podcast', async (req, res) => {
+  try {
+    const { topic } = req.body;
+    
+    if (!topic || !topic.trim()) {
+      return res.status(400).json({ 
+        error: 'Topic is required',
+        success: false 
+      });
+    }
+
+    console.log(`Request to generate podcast for topic: ${topic}`);
+
+    // If Murf API key is missing, use fallback immediately
+    if (!process.env.MURF_API_KEY || process.env.MURF_API_KEY === 'your_murf_api_key_here') {
+      console.log('Murf API key not configured. Using script-only fallback.');
+      const fallbackData = await generatePodcastFallback(topic.trim());
+      return res.json(fallbackData);
+    }
+
+    // Set headers for audio streaming
+    res.setHeader('Content-Type', 'audio/wav');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    console.log('Starting audio stream...');
+
+    // Generate and stream the podcast
+    await generatePodcast(topic.trim(), res);
+
+    // End the response stream once all audio segments are sent
+    res.end();
+    console.log('Audio stream finished.');
+
+  } catch (error) {
+    console.error('Error in /generate-podcast endpoint:', error.message);
+    // If headers have not been sent, we can still send a JSON error response
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to generate podcast',
+        message: error.message,
+        success: false 
+      });
+    } else {
+      // If headers are already sent, the stream is likely broken.
+      // We can't send a JSON response, so we just end the request.
+      res.end();
+    }
   }
 });
 

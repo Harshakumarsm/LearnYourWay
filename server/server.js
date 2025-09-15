@@ -5,12 +5,22 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import quizRouter from './src/routes/quiz.js';
 import { initializeQuizSocket } from './src/sockets/quizSocket.js';
+import dotenv from 'dotenv';
+import { generatePodcast, streamPodcastAudio, generatePodcastFallback } from '../podcast_helpers.js';
+
+// Load environment variables
+dotenv.config({ path: '../.env.local' });
+
+// Debug environment loading
+console.log('Environment check:');
+console.log('MURF_API_KEY configured:', process.env.MURF_API_KEY ? 'Yes' : 'No');
+console.log('GEMINI_API_KEY configured:', process.env.GEMINI_API_KEY ? 'Yes' : 'No');
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Vite dev server
+    origin: ["http://localhost:5173", "http://localhost:8080"], // Vite dev server and test server
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -19,7 +29,7 @@ const io = new Server(server, {
 app.set('socketio', io); // Make io accessible to routes
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "http://localhost:8080"],
   credentials: true
 }));
 
@@ -438,6 +448,52 @@ app.get('/health', (req, res) => {
     activeRooms: rooms.size,
     timestamp: new Date().toISOString()
   });
+});
+
+// Generate podcast endpoint
+app.post('/generate-podcast', async (req, res) => {
+  try {
+    const { topic } = req.body;
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic is required' });
+    }
+
+    console.log(`Received podcast generation request for topic: ${topic}`);
+    
+    // Check if Murf API key is configured
+    if (!process.env.MURF_API_KEY || process.env.MURF_API_KEY === 'your_murf_api_key_here') {
+      console.log('Murf API key not configured, using fallback mode');
+      const fallbackResult = await generatePodcastFallback(topic.trim());
+      return res.json(fallbackResult);
+    }
+
+    // Generate podcast with audio using streaming
+    await streamPodcastAudio(topic.trim(), res);
+    
+  } catch (error) {
+    console.error('Error generating podcast:', error);
+    
+    // If audio generation fails, try fallback
+    if (error.message.includes('Murf') || error.message.includes('TTS')) {
+      try {
+        console.log('Audio generation failed, attempting fallback');
+        const fallbackResult = await generatePodcastFallback(req.body.topic?.trim());
+        return res.json(fallbackResult);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        return res.status(500).json({ 
+          error: 'Failed to generate podcast', 
+          details: error.message,
+          fallbackError: fallbackError.message 
+        });
+      }
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to generate podcast', 
+      details: error.message 
+    });
+  }
 });
 
 const PORT = process.env.PORT || 3001;

@@ -7,6 +7,7 @@ import ReminderOverlay from "./ReminderOverlay";
 import { FeatureCard } from "./FeatureCard";
 import { StudyRoomModal } from "./StudyRoom/StudyRoomModal";
 import { MySenseiModal } from "./MySensei/MySenseiModal";
+import { HearMeModal } from "./HearMe/HearMeModal";
 import { Search, Mic, MapPin, Brain, Bell, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +74,7 @@ export const Dashboard = () => {
 
   const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
   const [isMySenseiModalOpen, setIsMySenseiModalOpen] = useState(false);
+  const [isHearMeModalOpen, setIsHearMeModalOpen] = useState(false);
 
 
   return (
@@ -147,6 +149,14 @@ export const Dashboard = () => {
                   );
                 }
 
+                if (feature.id === 'hearme-ai') {
+                  return (
+                    <div key={feature.id} onClick={() => setIsHearMeModalOpen(true)} className="cursor-pointer">
+                      <FeatureCard {...feature} />
+                    </div>
+                  );
+                }
+
                 if (feature.id === 'study-rooms') {
                   return (
                     <div key={feature.id} onClick={() => setIsStudyRoomModalOpen(true)} className="cursor-pointer">
@@ -175,6 +185,12 @@ export const Dashboard = () => {
       <MySenseiModal 
         isOpen={isMySenseiModalOpen}
         onClose={() => setIsMySenseiModalOpen(false)}
+      />
+
+      {/* HearMe AI Modal */}
+      <HearMeModal 
+        isOpen={isHearMeModalOpen}
+        onClose={() => setIsHearMeModalOpen(false)}
       />
     </SidebarProvider>
   );
