@@ -46,71 +46,67 @@ export const MySenseiModal: React.FC<MySenseiModalProps> = ({ isOpen, onClose })
       const initializeChat = async () => {
         setIsLoading(true);
         try {
+          console.log('Initializing My Sensei chat...');
           const response = await fetch('http://localhost:3001/chat', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             credentials: 'include',
-            body: JSON.stringify({ message: "Hello" })
+            mode: 'cors',
+            body: JSON.stringify({ message: "Hello, I'm opening My Sensei. Please introduce yourself as my AI learning assistant." })
           });
 
+          console.log('Response status:', response.status);
+          
           if (response.ok) {
             const data = await response.json();
+            console.log('Response data:', data);
             const welcomeMessage: Message = {
               id: '1',
-              content: data.reply,
+              content: data.reply || "Hello! I'm your AI learning assistant. How can I help you learn today?",
               sender: 'bot',
               timestamp: new Date()
             };
             setMessages([welcomeMessage]);
           } else {
-            // If server error, try direct Gemini call
-            const fallbackResponse = await fetch('http://localhost:3001/chat', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-              body: JSON.stringify({ message: "Hi, I'm opening My Sensei for the first time. Please introduce yourself as my AI learning assistant." })
-            });
-            
-            if (fallbackResponse.ok) {
-              const fallbackData = await fallbackResponse.json();
-              const fallbackMessage: Message = {
-                id: '1',
-                content: fallbackData.reply,
-                sender: 'bot',
-                timestamp: new Date()
-              };
-              setMessages([fallbackMessage]);
-            }
+            console.error('Server responded with error:', response.status, response.statusText);
+            throw new Error(`Server error: ${response.status}`);
           }
         } catch (error) {
           console.error('Error initializing chat:', error);
-          // Last resort - try one more API call
+          // Try alternative initialization
           try {
-            const lastResortResponse = await fetch('http://localhost:3001/chat', {
+            const altResponse = await fetch('http://localhost:3001/chat', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              credentials: 'include',
-              body: JSON.stringify({ message: "Please introduce yourself as an AI learning assistant" })
+              body: JSON.stringify({ message: "Hello" })
             });
             
-            if (lastResortResponse.ok) {
-              const lastResortData = await lastResortResponse.json();
-              const lastResortMessage: Message = {
+            if (altResponse.ok) {
+              const altData = await altResponse.json();
+              const altMessage: Message = {
                 id: '1',
-                content: lastResortData.reply,
+                content: altData.reply || "Hello! I'm your AI learning assistant. How can I help you today?",
                 sender: 'bot',
                 timestamp: new Date()
               };
-              setMessages([lastResortMessage]);
+              setMessages([altMessage]);
+            } else {
+              throw new Error('Alternative initialization failed');
             }
-          } catch (finalError) {
-            console.error('Final fallback failed:', finalError);
+          } catch (altError) {
+            console.error('Alternative initialization failed:', altError);
+            // Show fallback message
+            const fallbackMessage: Message = {
+              id: '1',
+              content: "Hello! I'm your AI learning assistant. I'm ready to help you learn anything you'd like. You can ask me questions directly or say 'Explain [topic]' to start a learning session with quizzes!",
+              sender: 'bot',
+              timestamp: new Date()
+            };
+            setMessages([fallbackMessage]);
           }
         } finally {
           setIsLoading(false);
@@ -133,31 +129,39 @@ export const MySenseiModal: React.FC<MySenseiModalProps> = ({ isOpen, onClose })
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = inputValue;
     setInputValue('');
     setIsLoading(true);
 
     try {
+      console.log('Sending message:', messageToSend);
       const response = await fetch('http://localhost:3001/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important for session management
-        body: JSON.stringify({ message: inputValue })
+        credentials: 'include',
+        mode: 'cors',
+        body: JSON.stringify({ message: messageToSend })
       });
 
+      console.log('Send message response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Send message response data:', data);
       
       // Detect mode based on response content
-      const detectedMode = data.reply.includes('Quiz') || data.reply.includes('Question') ? 'learning' : 'llm';
+      const detectedMode = data.reply && (data.reply.includes('Quiz') || data.reply.includes('Question')) ? 'learning' : 'llm';
       
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: data.reply,
+        content: data.reply || "I'm sorry, I didn't receive a proper response. Could you try again?",
         sender: 'bot',
         timestamp: new Date(),
         mode: detectedMode
@@ -167,9 +171,36 @@ export const MySenseiModal: React.FC<MySenseiModalProps> = ({ isOpen, onClose })
       setCurrentMode(detectedMode);
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Try alternative request without credentials
+      try {
+        console.log('Trying alternative request...');
+        const altResponse = await fetch('http://localhost:3001/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: messageToSend })
+        });
+
+        if (altResponse.ok) {
+          const altData = await altResponse.json();
+          const altBotMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            content: altData.reply || "I received your message but had trouble with the response format.",
+            sender: 'bot',
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, altBotMessage]);
+          return;
+        }
+      } catch (altError) {
+        console.error('Alternative request failed:', altError);
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm sorry, I'm having trouble connecting right now. Please make sure the server is running on port 3001.",
+        content: `I'm having trouble connecting to the server. Error: ${error.message}. Please check that the server is running on port 3001 and try again.`,
         sender: 'bot',
         timestamp: new Date()
       };
@@ -186,7 +217,8 @@ export const MySenseiModal: React.FC<MySenseiModalProps> = ({ isOpen, onClose })
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include'
+        credentials: 'include',
+        mode: 'cors'
       });
       
       setMessages([]);
@@ -311,7 +343,7 @@ export const MySenseiModal: React.FC<MySenseiModalProps> = ({ isOpen, onClose })
               </Button>
               <div className="flex-1" />
               <Badge variant="outline" className="text-xs">
-                Server: localhost:3001
+                Server: localhost:3001 {isInitialized ? '✅' : '⏳'}
               </Badge>
             </div>
             

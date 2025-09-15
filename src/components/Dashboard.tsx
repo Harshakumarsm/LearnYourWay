@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import ReminderOverlay from "./ReminderOverlay";
 import { FeatureCard } from "./FeatureCard";
@@ -20,10 +21,10 @@ const features = [
     label: "New"
   },
   {
-    id: "consult-ai", 
+    id: "career-roadmap", 
     icon: MapPin,
-    title: "Consult AI",
-    description: "Personalized career guidance and planning for every learner.",
+    title: "Career Roadmap",
+    description: "AI-powered career guidance with step-by-step roadmaps for your dream career.",
     label: "AI Powered"
   },
   {
@@ -64,11 +65,11 @@ const features = [
 ];
 
 export const Dashboard = () => {
+  const navigate = useNavigate();
   const [isReminderOverlayOpen, setReminderOverlayOpen] = useState(false);
 
   const openReminderOverlay = () => setReminderOverlayOpen(true);
   const closeReminderOverlay = () => setReminderOverlayOpen(false);
-
 
   const [isStudyRoomModalOpen, setIsStudyRoomModalOpen] = useState(false);
   const [isMySenseiModalOpen, setIsMySenseiModalOpen] = useState(false);
@@ -125,6 +126,14 @@ export const Dashboard = () => {
                 if (feature.id === 'ping-me') {
                   return (
                     <div key={feature.id} onClick={openReminderOverlay} className="cursor-pointer">
+                      <FeatureCard {...feature} />
+                    </div>
+                  );
+                }
+
+                if (feature.id === 'career-roadmap') {
+                  return (
+                    <div key={feature.id} onClick={() => navigate('/career-roadmap')} className="cursor-pointer">
                       <FeatureCard {...feature} />
                     </div>
                   );
